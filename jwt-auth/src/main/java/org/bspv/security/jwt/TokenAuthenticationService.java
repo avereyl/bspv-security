@@ -70,6 +70,8 @@ public class TokenAuthenticationService implements InitializingBean {
 		String jwt = Jwts
  				.builder()
  				.setClaims(claims)
+// 				.setId(UUID.randomUUID().toString())
+// 				.setIssuer("bspvSecurityV01")
  				.setIssuedAt(Date.from(now.toInstant(ZoneOffset.UTC)))
 				.setExpiration(expirationDate)
 				.signWith(algorithm, TextCodec.BASE64.encode(this.properties.getSecret()))
