@@ -1,10 +1,11 @@
 package org.bspv.security.config;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import org.bspv.security.common.CustomUserCache;
+import org.bspv.security.common.InMemoryReadOnlyUserDetailsService;
 import org.bspv.security.jwt.TokenGenerationService;
 import org.bspv.security.jwt.TokenGeneratorProperties;
 import org.bspv.security.jwt.filter.JWTLoginFilter;
@@ -40,7 +41,6 @@ import org.springframework.security.core.userdetails.UserCache;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
@@ -63,7 +63,9 @@ public class JwtServerConfiguration implements InitializingBean {
     private String fallbackAdminUsername;
     @Value("${bspv.security.fallback.password:admin}")
     private String fallbackAdminPassword;
-    private List<UserDetails> fallbackAdminUsers;
+    
+    @Autowired
+    private final List<UserDetails> fallbackAdminUsers = new ArrayList<>();
 
     @Configuration
     public class TokenHandlingDefaultConfiguration {
@@ -109,6 +111,7 @@ public class JwtServerConfiguration implements InitializingBean {
      */
     @EnableWebSecurity
     @EnableGlobalMethodSecurity(prePostEnabled = true)
+    @Order(1)
     class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
         @Autowired
@@ -132,7 +135,8 @@ public class JwtServerConfiguration implements InitializingBean {
             }
             // authentication provider using the default fallback admin account (always)
             DaoAuthenticationProvider fallbackAuthenticationProvider = new DaoAuthenticationProvider();
-            fallbackAuthenticationProvider.setUserDetailsService(new InMemoryUserDetailsManager(fallbackAdminUsers));
+            fallbackAuthenticationProvider.setUserDetailsService(new InMemoryReadOnlyUserDetailsService(fallbackAdminUsers));
+            fallbackAuthenticationProvider.setPasswordEncoder(new BCryptPasswordEncoder(11));
             auth.authenticationProvider(fallbackAuthenticationProvider);
         }
 
@@ -147,12 +151,12 @@ public class JwtServerConfiguration implements InitializingBean {
         protected void configure(HttpSecurity http) throws Exception {
             // @formatter:off
              http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.NEVER)
-                 .and().csrf().disable()
-                 .authorizeRequests()
-                 .antMatchers("/").permitAll()
-                 .antMatchers(HttpMethod.POST, "/login").permitAll()
-                 .anyRequest().authenticated()
                  .and()
+                 .csrf().disable()
+                 .anonymous().disable()
+                 .authorizeRequests()
+                 .antMatchers(HttpMethod.GET, "/").permitAll()
+                 .anyRequest().fullyAuthenticated().and()
                  // We filter here the login requests
                  .addFilterBefore(new JWTLoginFilter("/login", authenticationManager(), tokenAuthenticationService()),
                          UsernamePasswordAuthenticationFilter.class);
@@ -165,7 +169,7 @@ public class JwtServerConfiguration implements InitializingBean {
          * @return {@link JwtTokenProcessorProperties}
          */
         @Bean
-        @ConfigurationProperties(prefix = "security.jwt")
+        @ConfigurationProperties(prefix = "bspv.security.jwt")
         public TokenGeneratorProperties jwtTokenProcessorProperties() {
             return new TokenGeneratorProperties();
         }
@@ -224,12 +228,13 @@ public class JwtServerConfiguration implements InitializingBean {
     @Override
     public void afterPropertiesSet() throws Exception {
 //      @formatter:off
-        this.fallbackAdminUsers = Collections.unmodifiableList(
-                Arrays.asList(
-                        new User(fallbackAdminUsername, 
-                                new BCryptPasswordEncoder(11).encode(fallbackAdminPassword),
-                                Arrays.asList(new SimpleGrantedAuthority("ADMIN")
-                                ))));
+        if (this.fallbackAdminUsers == null || this.fallbackAdminUsers.isEmpty()) {
+            this.fallbackAdminUsers.add(
+                    new User(fallbackAdminUsername, 
+                            new BCryptPasswordEncoder(11).encode(fallbackAdminPassword),
+                            Arrays.asList(new SimpleGrantedAuthority("ADMIN")
+                                    )));
+        }
 //      @formatter:on
     }
 

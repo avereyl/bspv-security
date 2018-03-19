@@ -88,7 +88,9 @@ public class TokenGenerationService implements InitializingBean {
             response.addHeader("Preference-Applied", preferredTokenWriterName);
             preferredWriter.write(jwt, response);
         } else {
-            log.warn("Impossible to apply client preference : {} for jwt", preferredTokenWriterName);
+            if (!StringUtils.isEmpty(preferredTokenWriterName)) {
+                log.warn("Impossible to apply client preference : {} for jwt", preferredTokenWriterName);
+            }
             tokenWriters.get(0).write(jwt, response);
         }
     }

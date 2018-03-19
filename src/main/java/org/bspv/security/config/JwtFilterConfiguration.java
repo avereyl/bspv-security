@@ -15,6 +15,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -84,7 +85,7 @@ public class JwtFilterConfiguration {
      */
     @EnableWebSecurity
     @EnableGlobalMethodSecurity(prePostEnabled = true)
-    @Order(1)
+    @Order(2)
     class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
         @Autowired
@@ -100,16 +101,19 @@ public class JwtFilterConfiguration {
         protected void configure(HttpSecurity http) throws Exception {
             // @formatter:off
              http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.NEVER)
-                 .and().csrf().disable()
+                 .and()
+                 .csrf().disable()
+                 .anonymous().disable()
                  .authorizeRequests()
-                 .antMatchers("/").permitAll()
-                 .anyRequest().authenticated()
+                 .antMatchers(HttpMethod.GET, "/").permitAll()
+                 .anyRequest().fullyAuthenticated()
                  .and()
                  // And filter other requests to check the presence of JWT
                  .addFilterBefore(new JWTAuthenticationFilter(tokenValidationService()),
                          UsernamePasswordAuthenticationFilter.class);
             // @formatter:on
         }
+        
 
         /**
          * Properties for a JWT token processor.
@@ -117,7 +121,7 @@ public class JwtFilterConfiguration {
          * @return {@link JwtTokenProcessorProperties}
          */
         @Bean
-        @ConfigurationProperties(prefix = "security.jwt")
+        @ConfigurationProperties(prefix = "bspv.security.jwt")
         public TokenValidatorProperties jwtTokenValidatorProperties() {
             return new TokenValidatorProperties();
         }
