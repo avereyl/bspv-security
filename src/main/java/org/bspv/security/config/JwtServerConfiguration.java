@@ -32,7 +32,7 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -41,7 +41,8 @@ import org.springframework.security.core.userdetails.UserCache;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.NegatedRequestMatcher;
 
 /**
  * This class is responsible for declaring
@@ -63,12 +64,12 @@ public class JwtServerConfiguration implements InitializingBean {
     private String fallbackAdminUsername;
     @Value("${bspv.security.fallback.password:admin}")
     private String fallbackAdminPassword;
-    
+
     @Autowired
-    private final List<UserDetails> fallbackAdminUsers = new ArrayList<>();
+    private static final List<UserDetails> FALLBACK_ADMIN_USERS = new ArrayList<>();
 
     @Configuration
-    public class TokenHandlingDefaultConfiguration {
+    public static class TokenHandlingDefaultConfiguration {
 
         /**
          * Default mapper between JWT token and {@link UserDetails} implementation.
@@ -109,10 +110,10 @@ public class JwtServerConfiguration implements InitializingBean {
     /**
      * 
      */
-    @EnableWebSecurity
-    @EnableGlobalMethodSecurity(prePostEnabled = true)
-    @Order(1)
-    class SecurityConfiguration extends WebSecurityConfigurerAdapter {
+    @Order(2)
+    @Configuration
+    @EnableGlobalMethodSecurity(securedEnabled=true, prePostEnabled = true)
+    public static class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
         @Autowired
         public UserDetailsService userDetailsService;
@@ -135,7 +136,8 @@ public class JwtServerConfiguration implements InitializingBean {
             }
             // authentication provider using the default fallback admin account (always)
             DaoAuthenticationProvider fallbackAuthenticationProvider = new DaoAuthenticationProvider();
-            fallbackAuthenticationProvider.setUserDetailsService(new InMemoryReadOnlyUserDetailsService(fallbackAdminUsers));
+            fallbackAuthenticationProvider
+                    .setUserDetailsService(new InMemoryReadOnlyUserDetailsService(FALLBACK_ADMIN_USERS));
             fallbackAuthenticationProvider.setPasswordEncoder(new BCryptPasswordEncoder(11));
             auth.authenticationProvider(fallbackAuthenticationProvider);
         }
@@ -150,18 +152,26 @@ public class JwtServerConfiguration implements InitializingBean {
         @Override
         protected void configure(HttpSecurity http) throws Exception {
             // @formatter:off
-             http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.NEVER)
-                 .and()
+             http
+                 // We filter here the login requests
+                 .antMatcher("/login")
+                 .addFilter(new JWTLoginFilter("/login", authenticationManager(), tokenAuthenticationService()))
+                 .authorizeRequests()
+                     .antMatchers(HttpMethod.POST, "/login").permitAll()
+//                     .anyRequest().fullyAuthenticated()
+//                     .anyRequest().permitAll()// actually only POST /login
+                     .and()
+                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
                  .csrf().disable()
                  .anonymous().disable()
-                 .authorizeRequests()
-                 .antMatchers(HttpMethod.GET, "/").permitAll()
-                 .anyRequest().fullyAuthenticated().and()
-                 // We filter here the login requests
-                 .addFilterBefore(new JWTLoginFilter("/login", authenticationManager(), tokenAuthenticationService()),
-                         UsernamePasswordAuthenticationFilter.class);
+                 ;
             // @formatter:on
         }
+
+//        @Override
+//        public void configure(WebSecurity web) throws Exception {
+//            web.ignoring().requestMatchers(new NegatedRequestMatcher(new AntPathRequestMatcher("/login")));
+//        }
 
         /**
          * Properties for a JWT token processor.
@@ -195,7 +205,7 @@ public class JwtServerConfiguration implements InitializingBean {
 
     @Configuration
     @ConditionalOnProperty("bspv.security.usercache.enabled")
-    public class UserCacheAutoConfiguration {
+    public static class UserCacheAutoConfiguration {
 
         /**
          * Cache manager used by the application.
@@ -228,8 +238,8 @@ public class JwtServerConfiguration implements InitializingBean {
     @Override
     public void afterPropertiesSet() throws Exception {
 //      @formatter:off
-        if (this.fallbackAdminUsers == null || this.fallbackAdminUsers.isEmpty()) {
-            this.fallbackAdminUsers.add(
+        if (JwtServerConfiguration.FALLBACK_ADMIN_USERS.isEmpty()) {
+            JwtServerConfiguration.FALLBACK_ADMIN_USERS.add(
                     new User(fallbackAdminUsername, 
                             new BCryptPasswordEncoder(11).encode(fallbackAdminPassword),
                             Arrays.asList(new SimpleGrantedAuthority("ADMIN")

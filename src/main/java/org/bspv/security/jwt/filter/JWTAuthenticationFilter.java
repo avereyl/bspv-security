@@ -14,11 +14,11 @@ import javax.servlet.http.HttpServletRequest;
 import org.bspv.security.jwt.TokenValidationService;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.filter.GenericFilterBean;
+import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
 
 /**
  */
-public class JWTAuthenticationFilter extends GenericFilterBean {
+public class JWTAuthenticationFilter extends AbstractPreAuthenticatedProcessingFilter {
 
     private final TokenValidationService validationService;
 
@@ -32,8 +32,8 @@ public class JWTAuthenticationFilter extends GenericFilterBean {
     /*
      * (non-Javadoc)
      * 
-     * @see javax.servlet.Filter#doFilter(javax.servlet.ServletRequest, javax.servlet.ServletResponse,
-     * javax.servlet.FilterChain)
+     * @see javax.servlet.Filter#doFilter(javax.servlet.ServletRequest,
+     * javax.servlet.ServletResponse, javax.servlet.FilterChain)
      */
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain)
@@ -41,6 +41,22 @@ public class JWTAuthenticationFilter extends GenericFilterBean {
         Authentication authentication = this.validationService.validateAuthToken((HttpServletRequest) request);
         SecurityContextHolder.getContext().setAuthentication(authentication);
         filterChain.doFilter(request, response);
+    }
+
+    @Override
+    protected Object getPreAuthenticatedPrincipal(HttpServletRequest request) {
+        // Unused (AbstractPreAuthenticatedProcessingFilter is used for its place in the
+        // filter chain)
+        // TODO might properly override this method instead of overriding doFilter
+        return null;
+    }
+
+    @Override
+    protected Object getPreAuthenticatedCredentials(HttpServletRequest request) {
+        // Unused (AbstractPreAuthenticatedProcessingFilter is used for its place in the
+        // filter chain)
+        // TODO might properly override this method instead of overriding doFilter
+        return null;
     }
 
 }

@@ -8,6 +8,8 @@ import java.util.Collections;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -33,7 +35,8 @@ public class JWTLoginFilter extends AbstractAuthenticationProcessingFilter {
 
     public JWTLoginFilter(String url, AuthenticationManager authManager,
             TokenGenerationService authenticationService) {
-        super(new AntPathRequestMatcher(url, HttpMethod.POST.name()));
+//        super(new AntPathRequestMatcher(url, HttpMethod.POST.name()));
+        super(new AntPathRequestMatcher("/**"));
         setAuthenticationManager(authManager);
         this.authenticationService = authenticationService;
     }
@@ -65,6 +68,13 @@ public class JWTLoginFilter extends AbstractAuthenticationProcessingFilter {
     protected void successfulAuthentication(HttpServletRequest req, HttpServletResponse res, FilterChain chain,
             Authentication auth) throws IOException, ServletException {
         this.authenticationService.addAuthenticationToken(req, res, (UserDetails) auth.getPrincipal());
+    }
+
+    @Override
+    public void doFilter(ServletRequest arg0, ServletResponse arg1, FilterChain arg2)
+            throws IOException, ServletException {
+        // TODO Auto-generated method stub
+        super.doFilter(arg0, arg1, arg2);
     }
 
 }
