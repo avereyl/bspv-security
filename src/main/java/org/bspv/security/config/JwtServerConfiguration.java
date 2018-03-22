@@ -32,7 +32,6 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -41,8 +40,7 @@ import org.springframework.security.core.userdetails.UserCache;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
-import org.springframework.security.web.util.matcher.NegatedRequestMatcher;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
  * This class is responsible for declaring
@@ -58,15 +56,7 @@ import org.springframework.security.web.util.matcher.NegatedRequestMatcher;
  *
  */
 @Configuration
-public class JwtServerConfiguration implements InitializingBean {
-
-    @Value("${bspv.security.fallback.username:admin}")
-    private String fallbackAdminUsername;
-    @Value("${bspv.security.fallback.password:admin}")
-    private String fallbackAdminPassword;
-
-    @Autowired
-    private static final List<UserDetails> FALLBACK_ADMIN_USERS = new ArrayList<>();
+public class JwtServerConfiguration {
 
     @Configuration
     public static class TokenHandlingDefaultConfiguration {
@@ -110,10 +100,18 @@ public class JwtServerConfiguration implements InitializingBean {
     /**
      * 
      */
-    @Order(2)
+    @Order(1)
     @Configuration
     @EnableGlobalMethodSecurity(securedEnabled=true, prePostEnabled = true)
-    public static class SecurityConfiguration extends WebSecurityConfigurerAdapter {
+    public static class SecurityConfiguration extends WebSecurityConfigurerAdapter implements InitializingBean {
+        
+
+        @Value("${bspv.security.fallback.username:admin}")
+        private String fallbackAdminUsername;
+        @Value("${bspv.security.fallback.password:admin}")
+        private String fallbackAdminPassword;
+        @Autowired
+        private final List<UserDetails> fallbackAdminUsers = new ArrayList<>();
 
         @Autowired
         public UserDetailsService userDetailsService;
@@ -137,7 +135,7 @@ public class JwtServerConfiguration implements InitializingBean {
             // authentication provider using the default fallback admin account (always)
             DaoAuthenticationProvider fallbackAuthenticationProvider = new DaoAuthenticationProvider();
             fallbackAuthenticationProvider
-                    .setUserDetailsService(new InMemoryReadOnlyUserDetailsService(FALLBACK_ADMIN_USERS));
+                    .setUserDetailsService(new InMemoryReadOnlyUserDetailsService(fallbackAdminUsers));
             fallbackAuthenticationProvider.setPasswordEncoder(new BCryptPasswordEncoder(11));
             auth.authenticationProvider(fallbackAuthenticationProvider);
         }
@@ -155,11 +153,9 @@ public class JwtServerConfiguration implements InitializingBean {
              http
                  // We filter here the login requests
                  .antMatcher("/login")
-                 .addFilter(new JWTLoginFilter("/login", authenticationManager(), tokenAuthenticationService()))
+                 .addFilterBefore(new JWTLoginFilter(authenticationManager(), tokenAuthenticationService()), UsernamePasswordAuthenticationFilter.class)
                  .authorizeRequests()
                      .antMatchers(HttpMethod.POST, "/login").permitAll()
-//                     .anyRequest().fullyAuthenticated()
-//                     .anyRequest().permitAll()// actually only POST /login
                      .and()
                  .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
                  .csrf().disable()
@@ -167,11 +163,6 @@ public class JwtServerConfiguration implements InitializingBean {
                  ;
             // @formatter:on
         }
-
-//        @Override
-//        public void configure(WebSecurity web) throws Exception {
-//            web.ignoring().requestMatchers(new NegatedRequestMatcher(new AntPathRequestMatcher("/login")));
-//        }
 
         /**
          * Properties for a JWT token processor.
@@ -185,7 +176,7 @@ public class JwtServerConfiguration implements InitializingBean {
         }
 
         /**
-         * 
+         * Service responsible for generating JWT.
          * @return
          */
         @Bean
@@ -194,11 +185,24 @@ public class JwtServerConfiguration implements InitializingBean {
         }
 
         /**
-         * ???
+         * Overridden to use the {@link UserDetailsService} autowired.
          */
         @Override
         protected UserDetailsService userDetailsService() {
             return this.userDetailsService;
+        }
+        
+        @Override
+        public void afterPropertiesSet() throws Exception {
+//          @formatter:off
+            if (this.fallbackAdminUsers.isEmpty()) {
+                this.fallbackAdminUsers.add(
+                        new User(fallbackAdminUsername, 
+                                new BCryptPasswordEncoder(11).encode(fallbackAdminPassword),
+                                Arrays.asList(new SimpleGrantedAuthority("ADMIN")
+                                        )));
+            }
+//          @formatter:on
         }
 
     }
@@ -233,19 +237,6 @@ public class JwtServerConfiguration implements InitializingBean {
             return new CustomUserCache(cacheManager.getCache(CustomUserCache.USER_CACHE_NAME));
         }
 
-    }
-
-    @Override
-    public void afterPropertiesSet() throws Exception {
-//      @formatter:off
-        if (JwtServerConfiguration.FALLBACK_ADMIN_USERS.isEmpty()) {
-            JwtServerConfiguration.FALLBACK_ADMIN_USERS.add(
-                    new User(fallbackAdminUsername, 
-                            new BCryptPasswordEncoder(11).encode(fallbackAdminPassword),
-                            Arrays.asList(new SimpleGrantedAuthority("ADMIN")
-                                    )));
-        }
-//      @formatter:on
     }
 
 }

@@ -27,6 +27,8 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * This class is responsible for declaring
  * <ul>
@@ -39,7 +41,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
  * @see CookieTokenReader
  *
  */
-
+@Slf4j
 @Configuration
 public class JwtFilterConfiguration {
 
@@ -56,6 +58,7 @@ public class JwtFilterConfiguration {
         @Bean
         @ConditionalOnMissingBean(TokenToUserDetailsMapper.class)
         public TokenToUserDetailsMapper<UserDetails> tokenToUserDetailsMapper() {
+            log.warn("No specific TokenToUserDetailsMapper defined ! DefaultTokenToUserDetailsMapper is used.");
             return new DefaultTokenToUserDetailsMapper();
         }
 
@@ -85,7 +88,6 @@ public class JwtFilterConfiguration {
     /**
      * 
      */
-    @Order(2)
     @Configuration
     @EnableGlobalMethodSecurity(securedEnabled=true, prePostEnabled = true)
     public static class SecurityConfiguration extends WebSecurityConfigurerAdapter {
@@ -123,7 +125,7 @@ public class JwtFilterConfiguration {
          * @return
          */
         @Bean
-//        @ConditionalOnBean(value = JWTLoginFilter.class)
+        @ConditionalOnBean(value = JWTLoginFilter.class)
         public RegistrationBean jwtLoginFilterRegister(JWTLoginFilter filter) {
             FilterRegistrationBean registrationBean = new FilterRegistrationBean(filter);
             registrationBean.setEnabled(false);

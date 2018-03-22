@@ -6,7 +6,7 @@ package org.bspv.security.jwt.tokenreader;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 
-import org.bspv.security.jwt.TokenGeneratorProperties;
+import org.bspv.security.jwt.TokenValidatorProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.util.WebUtils;
 
@@ -16,7 +16,7 @@ import org.springframework.web.util.WebUtils;
 public class CookieTokenReader implements TokenReader {
 
 	@Autowired
-	private TokenGeneratorProperties properties;
+	private TokenValidatorProperties properties;
 	
 	/*
 	 * (non-Javadoc)

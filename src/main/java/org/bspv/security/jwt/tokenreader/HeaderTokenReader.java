@@ -5,7 +5,7 @@ package org.bspv.security.jwt.tokenreader;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.bspv.security.jwt.TokenGeneratorProperties;
+import org.bspv.security.jwt.TokenValidatorProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
@@ -17,7 +17,7 @@ public class HeaderTokenReader implements TokenReader {
 	private static final String TOKEN_PREFIX = "Bearer ";
 	
     @Autowired
-	private TokenGeneratorProperties properties;
+	private TokenValidatorProperties properties;
 	
 	/*
 	 * (non-Javadoc)

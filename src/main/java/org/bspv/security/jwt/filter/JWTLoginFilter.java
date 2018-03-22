@@ -8,14 +8,11 @@ import java.util.Collections;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.bspv.security.common.AccountCredentials;
 import org.bspv.security.jwt.TokenGenerationService;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -33,9 +30,8 @@ public class JWTLoginFilter extends AbstractAuthenticationProcessingFilter {
 
     private final TokenGenerationService authenticationService;
 
-    public JWTLoginFilter(String url, AuthenticationManager authManager,
+    public JWTLoginFilter(AuthenticationManager authManager,
             TokenGenerationService authenticationService) {
-//        super(new AntPathRequestMatcher(url, HttpMethod.POST.name()));
         super(new AntPathRequestMatcher("/**"));
         setAuthenticationManager(authManager);
         this.authenticationService = authenticationService;
@@ -68,13 +64,6 @@ public class JWTLoginFilter extends AbstractAuthenticationProcessingFilter {
     protected void successfulAuthentication(HttpServletRequest req, HttpServletResponse res, FilterChain chain,
             Authentication auth) throws IOException, ServletException {
         this.authenticationService.addAuthenticationToken(req, res, (UserDetails) auth.getPrincipal());
-    }
-
-    @Override
-    public void doFilter(ServletRequest arg0, ServletResponse arg1, FilterChain arg2)
-            throws IOException, ServletException {
-        // TODO Auto-generated method stub
-        super.doFilter(arg0, arg1, arg2);
     }
 
 }
