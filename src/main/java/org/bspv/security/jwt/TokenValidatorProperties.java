@@ -13,22 +13,13 @@ import lombok.Setter;
  */
 @Getter
 @Setter
-public class TokenValidatorProperties implements Serializable {
+public class TokenValidatorProperties extends TokenProcessorProperties implements Serializable {
 
 	/**
 	 * Generated serialVersionUID.
 	 */
     private static final long serialVersionUID = 943926683399261736L;
     
-    /**
-     * Header name storing the JWT.
-     */
-    private String authorizationHeaderName = "Authorization";
-    
-    /**
-     * Cookie name storing the JWT.
-     */
-    private String authorizationCookieName = "AuthorizationCookie";
     
     /**
 	 * Value of the secret set in application*.properties.

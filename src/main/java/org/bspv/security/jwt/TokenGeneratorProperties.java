@@ -10,11 +10,11 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * Properties class to store {@link JwtTokenProcessor} configuration.
+ * Properties class to store {@link TokenGenerationService} configuration.
  */
 @Getter
 @Setter
-public class TokenGeneratorProperties implements Serializable {
+public class TokenGeneratorProperties extends TokenProcessorProperties implements Serializable {
 
 	/**
 	 * Generated serialVersionUID.
@@ -41,21 +41,6 @@ public class TokenGeneratorProperties implements Serializable {
 	 * Default expiration times in milliseconds.
 	 */
 	private Integer defaultExpirationTime = 1_800_000; //30 minutes
-
-	/**
-	 * Header name storing the JWT.
-	 */
-	private String authorizationHeaderName = "Authorization";
-	
-	/**
-	 * Cookie name storing the JWT.
-	 */
-	private String authorizationCookieName = "AuthorizationCookie";
-	
-	/**
-	 * Parameter name storing the JWT.
-	 */
-	private String authorizationParameterName = "authorization";
 	
 	/**
 	 * Default channel to send back the authorization token.
