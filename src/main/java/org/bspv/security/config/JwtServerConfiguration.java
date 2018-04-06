@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.bspv.security.common.CustomUserCache;
+import org.bspv.security.cache.CustomUserCache;
 import org.bspv.security.common.InMemoryReadOnlyUserDetailsService;
 import org.bspv.security.jwt.TokenGenerationService;
 import org.bspv.security.jwt.TokenGeneratorProperties;

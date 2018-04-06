@@ -17,7 +17,7 @@ public final class InMemoryReadOnlyUserDetailsService implements UserDetailsServ
 
     private final Map<String, UserDetails> users = new HashMap<String, UserDetails>();
 
-    public  InMemoryReadOnlyUserDetailsService(Collection<? extends UserDetails> users) {
+    public InMemoryReadOnlyUserDetailsService(Collection<? extends UserDetails> users) {
         super();
         users.stream().forEach(u -> {
             if (!this.users.containsKey(u.getUsername())) {

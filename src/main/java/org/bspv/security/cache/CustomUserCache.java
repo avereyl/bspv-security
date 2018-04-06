@@ -1,7 +1,7 @@
 /**
  *
  */
-package org.bspv.security.common;
+package org.bspv.security.cache;
 
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.autoconfigure.security.SecurityProperties.User;
