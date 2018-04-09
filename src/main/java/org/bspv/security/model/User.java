@@ -23,7 +23,7 @@ import lombok.ToString;
  */
 @ToString
 @EqualsAndHashCode(of = { "username" })
-public final class User implements Serializable, UserDetails, CredentialsContainer, Cloneable {
+public class User implements Serializable, UserDetails, CredentialsContainer, Cloneable {
 
     /**
      * Generated serial version UID.
@@ -37,26 +37,25 @@ public final class User implements Serializable, UserDetails, CredentialsContain
     public static class Builder {
 
         /** @see User#id */
-        private UUID id;
+        protected UUID id;
         /** @see User#version */
-        private Long version;
+        protected Long version;
         /** @see User#username */
-        private String username;
+        protected String username;
         /** @see User#password */
-        private String password;
+        protected String password;
         /** @see User#enabled */
-        private boolean enabled = true;
+        protected boolean enabled = true;
         /** @see User#email */
-        private String email;
+        protected String email;
         /** @see User#authorities */
-        
-        private Set<ServiceGrantedAuthority> authorities = new HashSet<>();
+        protected Set<ServiceGrantedAuthority> authorities = new HashSet<>();
 
         /**
          * Constructor of the builder.
          * 
          */
-        private Builder() {
+        protected Builder() {
             super();
         }
 
@@ -143,6 +142,17 @@ public final class User implements Serializable, UserDetails, CredentialsContain
             this.authorities.addAll(authorities);
             return this;
         }
+        
+        protected Builder fromUser(User user) { 
+            this.id = user.id;
+            this.version = user.version;
+            this.username = user.username;
+            this.password = user.password;
+            this.enabled = user.enabled;
+            this.email = user.email;
+            this.authorities.addAll(user.authorities);
+            return this;
+        }
 
     }
 
@@ -150,42 +160,42 @@ public final class User implements Serializable, UserDetails, CredentialsContain
      * Unique identifier of the user.
      */
     @Getter
-    private final UUID id;
+    protected final UUID id;
 
     /**
      * Version of the bean
      */
     @Getter
-    private final Long version;
+    protected final Long version;
 
     /**
      * Unique userName.
      */
     @Getter
-    private final String username;
+    protected final String username;
 
     /**
      * User key.
      */
-    private String password;
+    protected String password;
 
     /**
      * Flag indicating if the user is enabled.
      */
     @Getter
-    private final boolean enabled;
+    protected final boolean enabled;
 
     /**
      * User's email.
      */
     @Getter
-    private final String email;
+    protected final String email;
 
     /**
      * Set of {@link ServiceGrantedAuthority}s.
      */
     @Getter
-    private final Set<ServiceGrantedAuthority> authorities = new HashSet<>();
+    protected final Set<ServiceGrantedAuthority> authorities = new HashSet<>();
     
 
     /**
@@ -202,7 +212,7 @@ public final class User implements Serializable, UserDetails, CredentialsContain
      * 
      * @param builder
      */
-    private User(Builder builder) {
+    protected User(Builder builder) {
         this.id = builder.id != null ? builder.id : UUID.randomUUID();
         this.version = builder.version != null ? builder.version : 0L;
         this.username = builder.username;
@@ -213,15 +223,7 @@ public final class User implements Serializable, UserDetails, CredentialsContain
     }
 
     public Builder toBuilder() {
-        Builder builder = User.builder();
-        builder.id = this.id;
-        builder.version = this.version;
-        builder.username = this.username;
-        builder.password = this.password;
-        builder.enabled = this.enabled;
-        builder.email = this.email;
-        builder.authorities.addAll(this.authorities);
-        return builder;
+        return User.builder().fromUser(this);
     }
     
     /*
@@ -281,6 +283,12 @@ public final class User implements Serializable, UserDetails, CredentialsContain
     @Override
     public User clone() throws CloneNotSupportedException {
         return this.toBuilder().build();
+    }
+    
+    public boolean hasAuthorithyForService(String authority, String service) {
+        return this.authorities
+                .stream()
+                .anyMatch(a -> authority.equalsIgnoreCase(a.getAuthority()) && service.equalsIgnoreCase(a.getService()));
     }
     
     

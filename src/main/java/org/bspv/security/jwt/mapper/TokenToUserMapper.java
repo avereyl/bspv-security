@@ -29,19 +29,12 @@ public class TokenToUserMapper implements TokenToUserDetailsMapper<User> {
      * jsonwebtoken.Claims)
      */
     @Override
-    @SuppressWarnings("unchecked")
     public User toUserDetails(Claims claims) {
-        List<Map<String, Object>> scopes = claims.get(AUTHORITIES_CLAIM_NAME, List.class);
-        List<ServiceGrantedAuthority> authorities = scopes
-                .stream()
-                .flatMap(scope -> ((List<String>)(scope.get(ServiceAuthoritiesWrapper.AUTHORITIES_NAME)))
-                        .stream()
-                        .map(auth -> new ServiceGrantedAuthority(scope.get(ServiceAuthoritiesWrapper.SERVICE_NAME).toString(), new SimpleGrantedAuthority(auth.toString())))
-                        ).collect(Collectors.toList());
+        List<ServiceGrantedAuthority> authorities = getAuthorithiesFromClaims(claims);
         return User.builder().id(UUID.fromString(claims.get(USER_ID_CLAIM_NAME, String.class)))
                 .username(claims.getSubject()).email(claims.get(EMAIL_CLAIM_NAME, String.class))
                 .authorities(authorities)
-                .version(claims.get(VERSION_CLAIM_NAME, Integer.class).longValue()).build();
+                .version(getVersionFromClaims(claims)).build();
     }
 
     /*
@@ -72,4 +65,20 @@ public class TokenToUserMapper implements TokenToUserDetailsMapper<User> {
         return claims;
     }
 
+    @SuppressWarnings("unchecked")
+    protected List<ServiceGrantedAuthority> getAuthorithiesFromClaims(Claims claims) {
+        List<Map<String, Object>> scopes = claims.get(AUTHORITIES_CLAIM_NAME, List.class);
+        List<ServiceGrantedAuthority> authorities = scopes
+                .stream()
+                .flatMap(scope -> ((List<String>)(scope.get(ServiceAuthoritiesWrapper.AUTHORITIES_NAME)))
+                        .stream()
+                        .map(auth -> new ServiceGrantedAuthority(scope.get(ServiceAuthoritiesWrapper.SERVICE_NAME).toString(), new SimpleGrantedAuthority(auth.toString())))
+                        ).collect(Collectors.toList());
+        return authorities;
+    }
+    
+    protected Long getVersionFromClaims(Claims claims) {
+        Integer version = claims.get(VERSION_CLAIM_NAME, Integer.class);
+        return version == null ? 0L : version.longValue();
+    }
 }

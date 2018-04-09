@@ -82,7 +82,7 @@ public class TokenValidationService implements InitializingBean {
      *            The request
      * @return The JWT token if any, an empty string otherwise
      */
-    protected String findToken(HttpServletRequest request) {
+    public String findToken(HttpServletRequest request) {
         return this.tokenFinders.stream().map(finder -> finder.find(request))
                 .filter(token -> !StringUtils.isEmpty(token)).findFirst().orElse("");
     }

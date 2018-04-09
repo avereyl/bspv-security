@@ -14,7 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class HeaderTokenReader implements TokenReader {
     
 
-	private static final String TOKEN_PREFIX = "Bearer ";
+	public static final String TOKEN_PREFIX = "Bearer ";
 	
     @Autowired
 	private TokenValidatorProperties properties;
