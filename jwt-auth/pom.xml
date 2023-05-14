@@ -23,7 +23,7 @@
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<java.version>1.8</java.version>
 		<!-- lib and plugins versions -->
-		<org.projectlombok.lombok.version>1.16.18</org.projectlombok.lombok.version>
+		<org.projectlombok.lombok.version>1.18.26</org.projectlombok.lombok.version>
 	</properties>
 
 	<dependencyManagement>
